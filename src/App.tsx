@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { Page } from '@/types';
+import { TreatmentProvider } from '@/context/TreatmentContext';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Landing } from '@/pages/Landing';
 import { Dashboard } from '@/pages/Dashboard';
@@ -8,6 +9,7 @@ import { PatientDetail } from '@/pages/PatientDetail';
 import { PriorityQueue } from '@/pages/PriorityQueue';
 import { AIAssessment } from '@/pages/AIAssessment';
 import { Reports } from '@/pages/Reports';
+import { TreatmentPage } from '@/pages/Treatment';
 import { SystemStatus } from '@/pages/SystemStatus';
 
 interface NavState {
@@ -52,6 +54,8 @@ function App() {
         );
       case 'reports':
         return <Reports onNavigate={navigate} />;
+      case 'treatment':
+        return <TreatmentPage onNavigate={navigate} />;
       case 'system-status':
         return <SystemStatus />;
       default:
@@ -60,9 +64,11 @@ function App() {
   };
 
   return (
-    <AppLayout page={nav.page} onNavigate={navigate}>
-      {renderPage()}
-    </AppLayout>
+    <TreatmentProvider>
+      <AppLayout page={nav.page} onNavigate={navigate}>
+        {renderPage()}
+      </AppLayout>
+    </TreatmentProvider>
   );
 }
 

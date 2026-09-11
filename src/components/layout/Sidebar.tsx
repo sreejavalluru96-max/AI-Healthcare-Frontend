@@ -1,10 +1,10 @@
 import {
   LayoutDashboard,
   Users,
-  Siren,
-  Brain,
   FileText,
-  Activity,
+  Siren,
+  Stethoscope,
+  CheckCircle2,
   HeartPulse,
   X,
 } from 'lucide-react';
@@ -15,18 +15,19 @@ interface SidebarProps {
   onNavigate: (page: Page) => void;
   mobileOpen: boolean;
   onCloseMobile: () => void;
+  activeTreatmentCount: number;
 }
 
-const navItems: { id: Page; label: string; icon: typeof LayoutDashboard }[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'patients', label: 'Patients', icon: Users },
-  { id: 'queue', label: 'Priority Queue', icon: Siren },
-  { id: 'ai-assessment', label: 'AI Assessment', icon: Brain },
-  { id: 'reports', label: 'Reports', icon: FileText },
-  { id: 'system-status', label: 'System Status', icon: Activity },
+const navItems: { id: Page; label: string; icon: typeof LayoutDashboard; step: string }[] = [
+  { id: 'dashboard', label: 'Welcome / Home', icon: LayoutDashboard, step: '1' },
+  { id: 'patients', label: 'Patient Management', icon: Users, step: '2' },
+  { id: 'reports', label: 'Patient Reports', icon: FileText, step: '3' },
+  { id: 'queue', label: 'AI Priority & Emergency Queue', icon: Siren, step: '4' },
+  { id: 'treatment', label: 'Treatment / Emergency Mgmt', icon: Stethoscope, step: '5' },
+  { id: 'system-status', label: 'System Status', icon: CheckCircle2, step: '' },
 ];
 
-export function Sidebar({ current, onNavigate, mobileOpen, onCloseMobile }: SidebarProps) {
+export function Sidebar({ current, onNavigate, mobileOpen, onCloseMobile, activeTreatmentCount }: SidebarProps) {
   return (
     <>
       {mobileOpen && (
@@ -72,8 +73,20 @@ export function Sidebar({ current, onNavigate, mobileOpen, onCloseMobile }: Side
                     : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                 }`}
               >
+                {item.step && (
+                  <span className={`text-[10px] font-mono w-4 text-center ${
+                    active ? 'text-brand-200' : 'text-slate-600'
+                  }`}>
+                    {item.step}
+                  </span>
+                )}
                 <Icon className="w-4.5 h-4.5" />
                 {item.label}
+                {item.id === 'treatment' && activeTreatmentCount > 0 && (
+                  <span className="ml-auto px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full">
+                    {activeTreatmentCount}
+                  </span>
+                )}
               </button>
             );
           })}

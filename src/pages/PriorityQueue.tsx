@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Siren, Brain, ArrowRight, Clock, User, RefreshCw } from 'lucide-react';
+import { Siren, Brain, ArrowRight, Clock, User, RefreshCw, Stethoscope, CheckCircle2 } from 'lucide-react';
 import type { Page, Patient, ClinicalData, RiskAssessment, PriorityQueueItem } from '@/types';
 import { api } from '@/lib/api';
+import { useTreatments } from '@/context/TreatmentContext';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { RiskBadge } from '@/components/ui/Badge';
 import { LoadingOverlay } from '@/components/ui/Loading';
@@ -21,6 +22,7 @@ const priorityOrder: Record<string, number> = {
 };
 
 export function PriorityQueue({ onNavigate }: PriorityQueueProps) {
+  const { startTreatment, isBeingTreated, isCompleted } = useTreatments();
   const [items, setItems] = useState<PriorityQueueItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,6 +93,8 @@ export function PriorityQueue({ onNavigate }: PriorityQueueProps) {
 
   const criticalCount = items.filter((i) => i.priority_level === 'Critical').length;
   const highCount = items.filter((i) => i.priority_level === 'High').length;
+  const inTreatmentCount = items.filter((i) => isBeingTreated(i.encounter_id)).length;
+  const completedCount = items.filter((i) => isCompleted(i.encounter_id)).length;
 
   if (loading && items.length === 0) return <LoadingOverlay message="Building priority queue from AI assessments…" />;
   if (error && items.length === 0) return <ErrorState message={error} onRetry={fetchQueue} />;
@@ -98,8 +102,8 @@ export function PriorityQueue({ onNavigate }: PriorityQueueProps) {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Summary bar */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 bg-gradient-to-r from-red-500 to-orange-500 rounded-xl p-5 text-white shadow-lg shadow-red-500/20">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-r from-red-500 to-orange-500 rounded-xl p-5 text-white shadow-lg shadow-red-500/20">
           <div className="flex items-center gap-3">
             <Siren className="w-6 h-6" />
             <div>
@@ -108,7 +112,7 @@ export function PriorityQueue({ onNavigate }: PriorityQueueProps) {
             </div>
           </div>
         </div>
-        <div className="flex-1 bg-gradient-to-r from-orange-400 to-amber-400 rounded-xl p-5 text-white shadow-lg shadow-orange-500/20">
+        <div className="bg-gradient-to-r from-orange-400 to-amber-400 rounded-xl p-5 text-white shadow-lg shadow-orange-500/20">
           <div className="flex items-center gap-3">
             <Brain className="w-6 h-6" />
             <div>
@@ -117,12 +121,21 @@ export function PriorityQueue({ onNavigate }: PriorityQueueProps) {
             </div>
           </div>
         </div>
-        <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <div className="bg-gradient-to-r from-brand-500 to-brand-600 rounded-xl p-5 text-white shadow-lg shadow-brand-500/20">
           <div className="flex items-center gap-3">
-            <Clock className="w-6 h-6 text-slate-400" />
+            <Stethoscope className="w-6 h-6" />
             <div>
-              <p className="text-3xl font-bold text-slate-900">{items.length}</p>
-              <p className="text-sm text-slate-500">Total in Queue</p>
+              <p className="text-3xl font-bold">{inTreatmentCount}</p>
+              <p className="text-sm text-white/80">In Treatment</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl p-5 text-white shadow-lg shadow-emerald-500/20">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className="w-6 h-6" />
+            <div>
+              <p className="text-3xl font-bold">{completedCount}</p>
+              <p className="text-sm text-white/80">Completed</p>
             </div>
           </div>
         </div>
@@ -146,7 +159,7 @@ export function PriorityQueue({ onNavigate }: PriorityQueueProps) {
       <Card>
         <CardHeader
           title="Emergency Priority Queue"
-          subtitle="Sorted by AI priority score — most critical first"
+          subtitle="Sorted by AI priority score — most critical first. Start treatment to move a patient into active care."
           icon={<Siren className="w-4 h-4" />}
         />
         <CardBody className="p-0">
@@ -162,58 +175,94 @@ export function PriorityQueue({ onNavigate }: PriorityQueueProps) {
             />
           ) : (
             <div className="divide-y divide-slate-100">
-              {items.map((item, idx) => (
-                <div
-                  key={item.encounter_id}
-                  className={`flex items-start gap-4 p-4 transition-colors hover:bg-slate-50 ${
-                    idx === 0 ? 'bg-red-50/50' : ''
-                  }`}
-                >
-                  {/* Rank */}
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${
-                    idx === 0 ? 'bg-red-500 text-white' :
-                    idx === 1 ? 'bg-orange-500 text-white' :
-                    idx === 2 ? 'bg-amber-500 text-white' :
-                    'bg-slate-100 text-slate-600'
-                  }`}>
-                    {idx + 1}
-                  </div>
-
-                  {/* Patient info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                      <p className="font-medium text-sm text-slate-900">{item.patient_name}</p>
-                      <RiskBadge level={item.priority_level} size="sm" />
-                      <RiskBadge level={item.risk_level} score={item.risk_score} size="sm" />
+              {items.map((item, idx) => {
+                const treating = isBeingTreated(item.encounter_id);
+                const completed = isCompleted(item.encounter_id);
+                return (
+                  <div
+                    key={item.encounter_id}
+                    className={`flex items-start gap-4 p-4 transition-colors ${
+                      completed ? 'opacity-50' : treating ? 'bg-brand-50/40' : 'hover:bg-slate-50'
+                    } ${idx === 0 && !treating && !completed ? 'bg-red-50/50' : ''}`}
+                  >
+                    {/* Rank */}
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${
+                      completed ? 'bg-emerald-100 text-emerald-600' :
+                      treating ? 'bg-brand-100 text-brand-600' :
+                      idx === 0 ? 'bg-red-500 text-white' :
+                      idx === 1 ? 'bg-orange-500 text-white' :
+                      idx === 2 ? 'bg-amber-500 text-white' :
+                      'bg-slate-100 text-slate-600'
+                    }`}>
+                      {completed ? <CheckCircle2 className="w-5 h-5" /> : treating ? <Stethoscope className="w-5 h-5" /> : idx + 1}
                     </div>
-                    <p className="text-xs text-slate-500 mb-1">
-                      Patient ID: {item.patient_id} · Encounter: #{item.encounter_id} · Priority Score: {item.priority_score}/100
-                    </p>
-                    <p className="text-xs text-slate-600 bg-slate-50 rounded-lg p-2 mt-1 leading-relaxed">
-                      {item.explanation}
-                    </p>
-                  </div>
 
-                  {/* Actions */}
-                  <div className="flex flex-col gap-2 shrink-0">
-                    <button
-                      onClick={() => onNavigate('patient-detail', { patientId: item.patient_id })}
-                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-slate-600 bg-slate-100 rounded-md hover:bg-slate-200 transition-colors whitespace-nowrap"
-                    >
-                      <User className="w-3 h-3" />
-                      Profile
-                    </button>
-                    <button
-                      onClick={() => onNavigate('ai-assessment', { encounterId: item.encounter_id })}
-                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-brand-700 bg-brand-50 rounded-md hover:bg-brand-100 transition-colors whitespace-nowrap"
-                    >
-                      <Brain className="w-3 h-3" />
-                      Assess
-                      <ArrowRight className="w-3 h-3" />
-                    </button>
+                    {/* Patient info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1 flex-wrap">
+                        <p className="font-medium text-sm text-slate-900">{item.patient_name}</p>
+                        <RiskBadge level={item.priority_level} size="sm" />
+                        <RiskBadge level={item.risk_level} score={item.risk_score} size="sm" />
+                        {treating && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-brand-50 text-brand-700 rounded-full ring-1 ring-brand-200">
+                            <Stethoscope className="w-3 h-3" />
+                            In Treatment
+                          </span>
+                        )}
+                        {completed && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-700 rounded-full ring-1 ring-emerald-200">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Completed
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mb-1">
+                        Patient ID: {item.patient_id} · Encounter: #{item.encounter_id} · Priority Score: {item.priority_score}/100
+                      </p>
+                      <p className="text-xs text-slate-600 bg-slate-50 rounded-lg p-2 mt-1 leading-relaxed">
+                        {item.explanation}
+                      </p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-col gap-2 shrink-0">
+                      <button
+                        onClick={() => onNavigate('patient-detail', { patientId: item.patient_id })}
+                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-slate-600 bg-slate-100 rounded-md hover:bg-slate-200 transition-colors whitespace-nowrap"
+                      >
+                        <User className="w-3 h-3" />
+                        Profile
+                      </button>
+                      <button
+                        onClick={() => onNavigate('ai-assessment', { encounterId: item.encounter_id })}
+                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-brand-700 bg-brand-50 rounded-md hover:bg-brand-100 transition-colors whitespace-nowrap"
+                      >
+                        <Brain className="w-3 h-3" />
+                        Assess
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                      {!treating && !completed && (
+                        <button
+                          onClick={() => startTreatment(item)}
+                          className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white bg-brand-600 rounded-md hover:bg-brand-500 transition-colors whitespace-nowrap"
+                        >
+                          <Stethoscope className="w-3 h-3" />
+                          Treat
+                        </button>
+                      )}
+                      {treating && (
+                        <button
+                          onClick={() => onNavigate('treatment')}
+                          className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-brand-700 bg-brand-100 rounded-md hover:bg-brand-200 transition-colors whitespace-nowrap"
+                        >
+                          <ArrowRight className="w-3 h-3" />
+                          Go to Treatment
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardBody>

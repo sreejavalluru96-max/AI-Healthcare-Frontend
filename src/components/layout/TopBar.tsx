@@ -3,12 +3,13 @@ import type { Page } from '@/types';
 
 const pageTitles: Record<Page, string> = {
   landing: 'Home',
-  dashboard: 'Dashboard',
+  dashboard: 'Welcome / Home',
   patients: 'Patient Management',
   'patient-detail': 'Patient Details',
-  queue: 'Emergency Priority Queue',
+  queue: 'AI Priority & Emergency Queue',
   'ai-assessment': 'AI Risk Assessment',
-  reports: 'Clinical Reports',
+  reports: 'Patient Reports & Clinical Analysis',
+  treatment: 'Treatment / Emergency Management',
   'system-status': 'System Status',
 };
 

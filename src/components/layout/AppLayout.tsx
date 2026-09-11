@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Page } from '@/types';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
+import { useTreatments } from '@/context/TreatmentContext';
 
 interface AppLayoutProps {
   page: Page;
@@ -11,6 +12,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ page, onNavigate, children }: AppLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { activeTreatments } = useTreatments();
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
@@ -19,6 +21,7 @@ export function AppLayout({ page, onNavigate, children }: AppLayoutProps) {
         onNavigate={onNavigate}
         mobileOpen={mobileOpen}
         onCloseMobile={() => setMobileOpen(false)}
+        activeTreatmentCount={activeTreatments.length}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopBar page={page} onOpenSidebar={() => setMobileOpen(true)} />

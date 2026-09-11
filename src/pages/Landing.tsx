@@ -7,7 +7,9 @@ import {
   ShieldCheck,
   Zap,
   Stethoscope,
-  TrendingDown,
+  Users,
+  FileText,
+  CheckCircle2,
   Clock,
 } from 'lucide-react';
 import type { Page } from '@/types';
@@ -57,8 +59,8 @@ export function Landing({ onEnter }: LandingProps) {
             </span>
           </h1>
           <p className="mt-6 text-lg text-slate-400 max-w-2xl text-balance leading-relaxed">
-            A real-time clinical risk dashboard that assesses patient vitals, ranks
-            emergency priority, and surfaces critical cases before they escalate.
+            A complete clinical workflow — from patient intake through AI risk scoring,
+            emergency prioritization, treatment, and discharge. All powered by your FastAPI backend.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row gap-4">
             <button
@@ -98,6 +100,51 @@ export function Landing({ onEnter }: LandingProps) {
         </div>
       </section>
 
+      {/* Clinical Workflow */}
+      <section className="relative px-6 lg:px-12 py-16 max-w-5xl mx-auto">
+        <h2 className="text-2xl font-bold text-center mb-4">The clinical workflow</h2>
+        <p className="text-center text-slate-400 text-sm mb-12 max-w-xl mx-auto">
+          Six steps from patient arrival to completed treatment — every stage connected through your FastAPI backend.
+        </p>
+        <div className="space-y-4">
+          {[
+            { icon: Users, step: '01', title: 'Welcome / Home', desc: 'Dashboard overview with live patient stats and system health monitoring.', page: 'dashboard' as Page },
+            { icon: Users, step: '02', title: 'Patient Management', desc: 'Browse, search, and manage all registered patients with full clinical records.', page: 'patients' as Page },
+            { icon: FileText, step: '03', title: 'Patient Reports & Clinical Analysis', desc: 'Aggregated analytics — vital sign averages, risk distribution, age and gender breakdowns.', page: 'reports' as Page },
+            { icon: Siren, step: '04', title: 'AI Priority & Emergency Queue', desc: 'Patients auto-ranked by AI risk score. Start treatment directly from the queue.', page: 'queue' as Page },
+            { icon: Stethoscope, step: '05', title: 'Treatment / Emergency Management', desc: 'Active treatments tracked in real time. Record outcomes and clinical notes.', page: 'treatment' as Page },
+            { icon: CheckCircle2, step: '06', title: 'Completed Treatment', desc: 'Mark treatments complete with outcome — patients are removed from the active queue automatically.', page: 'treatment' as Page },
+          ].map((s, i) => {
+            const Icon = s.icon;
+            return (
+              <div key={s.step}>
+                <button
+                  onClick={() => onEnter(s.page)}
+                  className="group w-full flex items-center gap-4 bg-white/5 ring-1 ring-white/10 rounded-xl p-5 hover:ring-white/20 transition-all text-left"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                    <Icon className="w-6 h-6 text-brand-400" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-1">
+                      <span className="text-xs font-mono text-slate-600">{s.step}</span>
+                      <h4 className="font-semibold text-sm">{s.title}</h4>
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed">{s.desc}</p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-slate-600 group-hover:text-white group-hover:translate-x-0.5 transition-all shrink-0" />
+                </button>
+                {i < 5 && (
+                  <div className="flex justify-center py-1">
+                    <div className="w-px h-4 bg-slate-700" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       {/* Feature cards */}
       <section className="relative px-6 lg:px-12 py-16 max-w-6xl mx-auto">
         <h2 className="text-2xl font-bold text-center mb-12">Built for emergency care teams</h2>
@@ -119,8 +166,8 @@ export function Landing({ onEnter }: LandingProps) {
             },
             {
               icon: Stethoscope,
-              title: 'Clinical Records',
-              desc: 'Full vital signs history per patient — heart rate, blood pressure, oxygen, temperature, and more.',
+              title: 'Treatment Tracking',
+              desc: 'Start treatments from the queue, track active cases, and record outcomes when patients are discharged.',
               color: 'from-emerald-500/20 to-teal-500/10',
               iconColor: 'text-emerald-400',
             },
@@ -143,43 +190,13 @@ export function Landing({ onEnter }: LandingProps) {
         </div>
       </section>
 
-      {/* Workflow */}
-      <section className="relative px-6 lg:px-12 py-16 max-w-5xl mx-auto">
-        <h2 className="text-2xl font-bold text-center mb-12">How it works</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[
-            { icon: Activity, step: '01', title: 'Capture Vitals', desc: 'Clinical data flows in from the FastAPI backend.' },
-            { icon: Brain, step: '02', title: 'AI Scores Risk', desc: 'Each encounter is analyzed and assigned a 0–100 risk score.' },
-            { icon: Siren, step: '03', title: 'Prioritize', desc: 'Critical patients bubble to the top of the queue automatically.' },
-            { icon: TrendingDown, step: '04', title: 'Act', desc: 'Clinicians intervene before conditions worsen.' },
-          ].map((s, i) => {
-            const Icon = s.icon;
-            return (
-              <div key={s.step} className="relative">
-                <div className="bg-white/5 ring-1 ring-white/10 rounded-xl p-5 h-full">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-xs font-mono text-slate-600">{s.step}</span>
-                    <Icon className="w-5 h-5 text-brand-400" />
-                  </div>
-                  <h4 className="font-semibold text-sm mb-1">{s.title}</h4>
-                  <p className="text-xs text-slate-500">{s.desc}</p>
-                </div>
-                {i < 3 && (
-                  <div className="hidden md:block absolute top-1/2 -right-2 w-4 h-px bg-slate-700" />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
       {/* CTA */}
       <section className="relative px-6 lg:px-12 py-20 max-w-4xl mx-auto text-center">
         <div className="bg-gradient-to-br from-brand-600/30 to-emerald-600/20 ring-1 ring-white/10 rounded-3xl p-10 backdrop-blur-sm">
           <Clock className="w-8 h-8 text-brand-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-3">Every second counts</h2>
           <p className="text-slate-400 mb-8 max-w-lg mx-auto">
-            Start monitoring your patients in real time with AI-assisted triage.
+            Start monitoring your patients in real time with AI-assisted triage and treatment tracking.
           </p>
           <button
             onClick={() => onEnter('dashboard')}

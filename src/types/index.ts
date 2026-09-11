@@ -54,6 +54,23 @@ export interface PriorityQueueItem {
   explanation: string;
 }
 
+export interface Treatment {
+  treatment_id: string;
+  encounter_id: number;
+  patient_id: number;
+  patient_name: string;
+  priority_level: string;
+  priority_score: number;
+  risk_level: string;
+  risk_score: number;
+  explanation: string;
+  status: 'active' | 'completed';
+  started_at: string;
+  completed_at: string | null;
+  treatment_notes: string;
+  outcome: string | null;
+}
+
 export type Page =
   | 'landing'
   | 'dashboard'
@@ -62,4 +79,5 @@ export type Page =
   | 'queue'
   | 'ai-assessment'
   | 'reports'
+  | 'treatment'
   | 'system-status';
