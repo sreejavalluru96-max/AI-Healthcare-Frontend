@@ -329,7 +329,7 @@ export const Reports: React.FC = () => {
                 <BarChart data={treatmentStatsData} margin={{ top: 15, right: 30, left: 10, bottom: 10 }}>
                   <XAxis dataKey="status" tick={{ fontSize: 13, fontWeight: 700, fill: 'var(--text-primary)' }} />
                   <YAxis allowDecimals={false} tick={{ fill: 'var(--text-muted)' }} />
-                  <Tooltip formatter={(value: number) => [`${value} Patients`, 'Count']} />
+                  <Tooltip formatter={(value) => [`${value ?? 0} Patients`, 'Count']} />
                   <Bar dataKey="count" radius={[6, 6, 0, 0]} barSize={48}>
                     {treatmentStatsData.map((entry, index) => (
                       <Cell key={`cell-status-${index}`} fill={entry.color} />
