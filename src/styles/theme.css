@@ -1,0 +1,65 @@
+:root {
+  /* Brand & Layout Colors - Light Clinical Healthcare Palette */
+  --bg-app: #F4F9FF;
+  --bg-app-subtle: #E8F5FF;
+  --bg-surface: #ffffff;
+  --bg-nav: rgba(255, 255, 255, 0.95);
+  --bg-nav-active: #E8F5FF;
+  --border-nav: #D7E8F5;
+  --text-nav: #102A43;
+  --text-nav-muted: #52677D;
+  
+  --text-primary: #102A43;
+  --text-secondary: #52677D;
+  --text-muted: #64748b;
+  
+  --border-color: #D7E8F5;
+  --border-subtle: #E8F5FF;
+  
+  /* Primary Accent: Healthcare Blue / Bright Cyan / Medical Teal */
+  --primary-50: #e0f2fe;
+  --primary-100: #bae6fd;
+  --primary-400: #38bdf8;
+  --primary-500: #12BDEB;
+  --primary-600: #087FC1;
+  --primary-700: #0369a1;
+  --teal-600: #0d9488;
+  
+  /* Medical Priority Levels */
+  --critical-bg: #fef2f2;
+  --critical-border: #fecaca;
+  --critical-text: #991b1b;
+  --critical-badge: #dc2626;
+  
+  --high-bg: #fff7ed;
+  --high-border: #ffedd5;
+  --high-text: #9a3412;
+  --high-badge: #ea580c;
+  
+  --moderate-bg: #fffbeb;
+  --moderate-border: #fef3c7;
+  --moderate-text: #92400e;
+  --moderate-badge: #d97706;
+  
+  --stable-bg: #f0fdf4;
+  --stable-border: #bbf7d0;
+  --stable-text: #166534;
+  --stable-badge: #16a34a;
+
+  /* Premium Haptic Shadows */
+  --shadow-sm: 0 1px 3px 0 rgba(16, 42, 67, 0.04), 0 1px 2px -1px rgba(16, 42, 67, 0.02);
+  --shadow-md: 0 4px 14px -2px rgba(8, 127, 193, 0.08), 0 2px 4px -2px rgba(16, 42, 67, 0.04);
+  --shadow-lg: 0 12px 24px -4px rgba(8, 127, 193, 0.12), 0 4px 6px -4px rgba(16, 42, 67, 0.03);
+  --shadow-glow: 0 0 20px rgba(18, 189, 235, 0.25);
+
+  /* Border Radius */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+  
+  /* Transitions */
+  --transition-fast: 0.15s cubic-bezier(0.32, 0.72, 0, 1);
+  --transition-normal: 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+  --transition-smooth: 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
