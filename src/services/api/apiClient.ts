@@ -1,4 +1,5 @@
-export let API_BASE_URL = 'http://127.0.0.1:8000';
+
+export let API_BASE_URL = 'https://mediqueueai-backend.onrender.com';
 
 export interface ApiErrorResponse {
   message: string;
@@ -8,7 +9,7 @@ export interface ApiErrorResponse {
 
 // Candidates to try: direct 127.0.0.1:8000, direct localhost:8000, and relative URL (Vite proxy)
 const BACKEND_CANDIDATES = [
-  'http://127.0.0.1:8000',
+  'https://mediqueueai-backend.onrender.com',
   'http://localhost:8000',
   '',
 ];
@@ -120,7 +121,7 @@ export async function apiFetch<T>(endpoint: string, options?: RequestInit): Prom
   if (cleanEndpoint.includes('prescriptions')) {
     console.error('[Prescription] Actual error:', lastError);
   }
-  const error: Error & ApiErrorResponse = new Error(`FastAPI backend is unavailable at http://127.0.0.1:8000`);
+  const error: Error & ApiErrorResponse = new Error(`FastAPI backend is unavailable at https://mediqueueai-backend.onrender.com`);
   error.isNetworkError = true;
   throw error;
 }
