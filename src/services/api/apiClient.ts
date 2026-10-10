@@ -1,5 +1,5 @@
 
-export let API_BASE_URL = 'https://mediqueueai-backend.onrender.com';
+export let API_BASE_URL = 'http://127.0.0.1:8000';
 
 export interface ApiErrorResponse {
   message: string;
@@ -9,7 +9,7 @@ export interface ApiErrorResponse {
 
 // Candidates to try: direct 127.0.0.1:8000, direct localhost:8000, and relative URL (Vite proxy)
 const BACKEND_CANDIDATES = [
-  'https://mediqueueai-backend.onrender.com',
+  'http://127.0.0.1:8000',
   'http://localhost:8000',
   '',
 ];
@@ -77,8 +77,8 @@ export async function apiFetch<T>(endpoint: string, options?: RequestInit): Prom
         const error: Error & ApiErrorResponse = new Error(errorMessage);
         error.status = response.status;
 
-        // If candidate relative URL (base === '') returned 404, try direct backend URL
-        if (base === '' && response.status === 404) {
+        // If candidate failed with 404 or 5xx server error, try next candidate
+        if (response.status === 404 || response.status >= 500) {
           lastError = error;
           continue;
         }
@@ -105,15 +105,15 @@ export async function apiFetch<T>(endpoint: string, options?: RequestInit): Prom
     } catch (err: any) {
       lastError = err;
 
-      // If backend returned an HTTP status (e.g. 400, 422, 500), throw immediately!
-      if (err.status !== undefined && !(base === '' && err.status === 404)) {
+      // If specific client validation error (e.g. 400, 422), rethrow
+      if (err.status !== undefined && (err.status === 400 || err.status === 422)) {
         if (cleanEndpoint.includes('prescriptions')) {
           console.error('[Prescription] Actual error:', err);
         }
         throw err;
       }
 
-      console.warn(`[MediQueue API] Candidate request to ${url} failed (network/CORS):`, err?.message || err);
+      console.warn(`[MediQueue API] Candidate request to ${url} failed (network/CORS/500):`, err?.message || err);
     }
   }
 

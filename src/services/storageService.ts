@@ -71,18 +71,26 @@ export const getStoredPatients = (): Patient[] => {
   try {
     const raw = localStorage.getItem(PATIENTS_STORAGE_KEY);
     if (!raw) {
-      return [];
+      localStorage.setItem(PATIENTS_STORAGE_KEY, JSON.stringify(INITIAL_PATIENTS));
+      return INITIAL_PATIENTS;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      localStorage.setItem(PATIENTS_STORAGE_KEY, JSON.stringify(INITIAL_PATIENTS));
+      return INITIAL_PATIENTS;
+    }
+    return parsed;
   } catch (error) {
     console.error('Error loading patients from localStorage:', error);
-    return [];
+    return INITIAL_PATIENTS;
   }
 };
 
 export const saveStoredPatients = (patients: Patient[]): void => {
   try {
-    localStorage.setItem(PATIENTS_STORAGE_KEY, JSON.stringify(patients));
+    if (Array.isArray(patients) && patients.length > 0) {
+      localStorage.setItem(PATIENTS_STORAGE_KEY, JSON.stringify(patients));
+    }
   } catch (error) {
     console.error('Error saving patients to localStorage:', error);
   }

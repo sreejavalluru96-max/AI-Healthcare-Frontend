@@ -41,23 +41,29 @@ export const PriorityQueue: React.FC = () => {
   const navigate = useNavigate();
   const [queue, setQueue] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Modal State
   const [assigningPatient, setAssigningPatient] = useState<Patient | null>(null);
   const [startingPatientId, setStartingPatientId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchQueue = async () => {
     setLoading(true);
-    treatmentService
-      .getPriorityQueue()
-      .then((data) => {
-        setQueue(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setQueue([]);
-        setLoading(false);
-      });
+    setError(null);
+    try {
+      const data = await treatmentService.getPriorityQueue();
+      setQueue(data);
+    } catch (err: any) {
+      console.error('Failed to load priority queue data:', err);
+      setError(err?.message || 'Failed to load priority queue telemetry');
+      setQueue([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchQueue();
   }, [patients]);
 
   const criticalCount = queue.filter((p) => p.status === 'CRITICAL').length;
@@ -153,6 +159,15 @@ export const PriorityQueue: React.FC = () => {
         <div className="card-double-bezel p-5 text-center text-muted">
           <div className="spinner-sm" style={{ margin: '0 auto 1rem auto' }}></div>
           Scanning priority queue telemetries...
+        </div>
+      ) : error ? (
+        <div className="card-double-bezel p-5 text-center" style={{ color: '#DC2626' }}>
+          <AlertTriangle size={32} style={{ margin: '0 auto 0.5rem auto', color: '#DC2626' }} />
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '0.5rem' }}>Unable to load Priority Queue data</h3>
+          <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>{error}</p>
+          <button onClick={fetchQueue} className="btn btn-secondary btn-sm" style={{ margin: '0 auto' }}>
+            Retry Telemetry Scan
+          </button>
         </div>
       ) : queue.length === 0 ? (
         <EmptyState

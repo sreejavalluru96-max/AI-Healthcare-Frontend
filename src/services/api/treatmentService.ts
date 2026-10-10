@@ -24,21 +24,31 @@ export const treatmentService = {
 
     const activeQueue = patients.filter(
       (p) =>
-        (p.status === 'CRITICAL' || p.status === 'HIGH' || p.status === 'MODERATE') &&
+        (p.status === 'CRITICAL' || p.status === 'HIGH') &&
         p.treatmentStatus !== 'Completed' &&
         p.treatmentStatus !== 'COMPLETED' &&
-        p.treatmentStatus !== 'OBSERVATION' &&
-        p.treatmentStatus !== 'Observation'
+        p.treatmentStatus !== 'Cancelled'
     );
 
-    return activeQueue.sort((a, b) => {
+    // Deduplicate by patient ID / encounter ID
+    const seen = new Set<string>();
+    const uniqueQueue = activeQueue.filter((p) => {
+      const key = p.id || String(p.encounterId);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    return uniqueQueue.sort((a, b) => {
       const weightA = priorityWeight[a.status] || 0;
       const weightB = priorityWeight[b.status] || 0;
       if (weightA !== weightB) return weightB - weightA;
 
       const scoreA = a.latestAssessment?.riskScore || 0;
       const scoreB = b.latestAssessment?.riskScore || 0;
-      return scoreB - scoreA;
+      if (scoreA !== scoreB) return scoreB - scoreA;
+
+      return a.id.localeCompare(b.id);
     });
   },
 

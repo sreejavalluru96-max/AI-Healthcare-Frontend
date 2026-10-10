@@ -46,6 +46,7 @@ export interface BackendEncounter {
   visit_date: string;
   status: string;
   chief_complaint?: string;
+  notes?: string;
 
   heart_rate?: number;
   systolic_bp?: number;
@@ -110,28 +111,20 @@ const calculateAge = (dateOfBirth: string): number => {
 };
 
 const mapPriorityLevel = (
-  value?: string | number
+  value?: string | number,
+  numericScore?: number
 ): PriorityLevel => {
   const normalized = String(value ?? '').toUpperCase();
 
-  if (
-    normalized.includes('CRITICAL') ||
-    normalized === '100'
-  ) {
+  if (normalized.includes('CRITICAL') || normalized === '100' || (typeof numericScore === 'number' && numericScore >= 85)) {
     return 'CRITICAL';
   }
 
-  if (
-    normalized.includes('HIGH') ||
-    normalized === 'HIGH'
-  ) {
+  if (normalized.includes('HIGH') || (typeof numericScore === 'number' && numericScore >= 70)) {
     return 'HIGH';
   }
 
-  if (
-    normalized.includes('MODERATE') ||
-    normalized.includes('MEDIUM')
-  ) {
+  if (normalized.includes('MODERATE') || normalized.includes('MEDIUM') || (typeof numericScore === 'number' && numericScore >= 35)) {
     return 'MODERATE';
   }
 
@@ -623,13 +616,49 @@ const mapBackendPatientToFrontend = (
   const backendPriority =
     backendAssessment
       ? mapPriorityLevel(
-        backendAssessment.priority_level || backendAssessment.risk_level
+        backendAssessment.priority_level || backendAssessment.risk_level,
+        backendAssessment.risk_score ?? backendAssessment.priority_score
       )
       : undefined;
 
-  const status: PriorityLevel =
-    backendPriority ??
-    (isLocallyEdited && storedPatient?.status ? storedPatient.status : 'STABLE');
+  let derivedLocalAss: { priority: PriorityLevel; score: number; treatmentStatus: TreatmentStatus; assessment: AiAssessment } | undefined = undefined;
+
+  const getDerivedAss = () => {
+    if (!derivedLocalAss) {
+      const tempPatient: Patient = {
+        id: tempPatientId,
+        name: effectiveName,
+        age: effectiveAge,
+        gender: effectiveGender,
+        phone: effectivePhone,
+        bloodGroup: effectiveBloodGroup,
+        department: storedPatient?.department ?? ('General Medicine' as Department),
+        symptoms: effectiveSymptoms,
+        vitals: effectiveVitals,
+        clinicalRecords: [],
+        reports: [],
+        medicalHistory: (Array.isArray(storedPatient?.medicalHistory) ? storedPatient.medicalHistory : []),
+        emergencyContact: (storedPatient?.emergencyContact ?? { name: '', relationship: '', phone: '' }),
+        status: 'STABLE',
+        treatmentStatus: 'WAITING',
+        waitingTimeMinutes: 0,
+        registeredAt: backendPatient.created_at ?? new Date().toISOString(),
+      };
+      derivedLocalAss = calculateLocalAssessment(tempPatient);
+    }
+    return derivedLocalAss;
+  };
+
+  let status: PriorityLevel;
+  if (backendPriority) {
+    status = backendPriority;
+  } else if (storedPatient?.status && storedPatient.status !== 'STABLE') {
+    status = storedPatient.status;
+  } else if (storedPatient?.latestAssessment?.priority && storedPatient.latestAssessment.priority !== 'STABLE') {
+    status = storedPatient.latestAssessment.priority;
+  } else {
+    status = getDerivedAss().priority;
+  }
 
   const rawStatus = String(
     storedPatient?.treatmentStatus ||
@@ -639,16 +668,14 @@ const mapBackendPatientToFrontend = (
   ).toUpperCase().replace(/\s+/g, '_');
 
   let treatmentStatus: TreatmentStatus = 'WAITING';
-  if (rawStatus === 'IN_PROGRESS' || rawStatus === 'IN_TREATMENT') {
-    treatmentStatus = 'IN_PROGRESS';
-  } else if (rawStatus === 'OBSERVATION') {
+  if ((storedPatient as any)?._completedLocally) {
+    treatmentStatus = 'COMPLETED';
+  } else if (storedPatient?.treatmentStatus === 'OBSERVATION' || storedPatient?.treatmentStatus === 'Observation' || rawStatus === 'OBSERVATION') {
     treatmentStatus = 'OBSERVATION';
-  } else if (rawStatus === 'COMPLETED') {
-    treatmentStatus = storedPatient?.treatmentStatus === 'OBSERVATION' || storedPatient?.treatmentStatus === 'Observation'
-      ? 'OBSERVATION'
-      : 'COMPLETED';
+  } else if (storedPatient?.treatmentStatus === 'IN_PROGRESS' || storedPatient?.treatmentStatus === 'In Treatment' || rawStatus === 'IN_PROGRESS' || rawStatus === 'IN_TREATMENT' || (latestEncounter?.notes && String(latestEncounter.notes).toLowerCase().includes('in treatment'))) {
+    treatmentStatus = 'IN_PROGRESS';
   } else {
-    treatmentStatus = storedPatient?.treatmentStatus || 'WAITING';
+    treatmentStatus = 'WAITING';
   }
 
   const latestAssessment: AiAssessment | undefined = backendAssessment
@@ -656,8 +683,8 @@ const mapBackendPatientToFrontend = (
         id: `ASS-${backendPatient.patient_id}-${backendAssessment.encounter_id || Date.now()}`,
         patientId: tempPatientId,
         patientName: effectiveName,
-        riskScore: backendAssessment.risk_score ?? backendAssessment.priority_score ?? 0,
-        riskLevel: backendAssessment.risk_level,
+        riskScore: backendAssessment.risk_score ?? backendAssessment.priority_score ?? (status === 'CRITICAL' ? 85 : status === 'HIGH' ? 65 : status === 'MODERATE' ? 45 : 20),
+        riskLevel: backendAssessment.risk_level || status,
         priority: backendPriority || status,
         assessedAt: new Date().toISOString(),
         riskFactors: backendAssessment.explanation ? [backendAssessment.explanation] : [],
@@ -665,7 +692,7 @@ const mapBackendPatientToFrontend = (
         recommendedActions: [],
         status: 'Active',
       }
-    : storedPatient?.latestAssessment;
+    : (storedPatient?.latestAssessment || getDerivedAss().assessment);
 
   const clinicalRecord: ClinicalRecord = {
     id: String(
@@ -906,19 +933,34 @@ export const patientService = {
       patient => !isDeleted(patient.id)
     );
 
-    const activePatients = [
-      ...mappedBackendPatients,
-      ...activeAddedPatients.filter(
-        addedPatient =>
-          !mappedBackendPatients.some(
-            (backendPatient: Patient) =>
-              backendPatient.id === addedPatient.id ||
-              backendPatient.id.replace(/\D/g, '') === addedPatient.id.replace(/\D/g, '')
-          )
-      ),
-    ].filter(patient => !isDeleted(patient.id));
+    const activePatients = (mappedBackendPatients.length > 0
+      ? [
+          ...mappedBackendPatients,
+          ...activeAddedPatients.filter(
+            addedPatient =>
+              !mappedBackendPatients.some(
+                (backendPatient: Patient) =>
+                  backendPatient.id === addedPatient.id ||
+                  backendPatient.id.replace(/\D/g, '') === addedPatient.id.replace(/\D/g, '')
+              )
+          ),
+        ]
+      : [
+          ...storedPatients,
+          ...activeAddedPatients.filter(
+            addedPatient =>
+              !storedPatients.some(
+                (sp: Patient) =>
+                  sp.id === addedPatient.id ||
+                  sp.id.replace(/\D/g, '') === addedPatient.id.replace(/\D/g, '')
+              )
+          ),
+        ]
+    ).filter(patient => !isDeleted(patient.id));
 
-    saveStoredPatients(activePatients);
+    if (mappedBackendPatients.length > 0) {
+      saveStoredPatients(activePatients);
+    }
 
     return activePatients;
   },
